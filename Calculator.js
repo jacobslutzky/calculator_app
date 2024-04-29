@@ -150,6 +150,19 @@ export default function Calculator() {
                     {name: ".", type: "per"},
                     {name: "=", type:"eq"}
                 ]
+   
+    const getButtonColor = (button) => {
+        if (button.name !== 0) {
+            return styles.button;
+        } else if (button.type === "op" || button.type === "eq") {
+            return button.name === selectedOperator && highlightOperator ? { backgroundColor: "white" } : { backgroundColor: "#e3b11c" };
+        } else if (["clear", "sign", "perc"].includes(button.type)) {
+            return { backgroundColor: "#c6c3c1" };
+        } else {
+            return {};
+        }
+    };
+                
   return (
     <View style={styles.container}>
     <View style={styles.outputContainer}>
@@ -165,8 +178,17 @@ export default function Calculator() {
         style={styles.list}
         contentContainerStyle={{ justifyContent: 'flex-end'}}
         renderItem={({ item: button,index }) =>  
-        <TouchableOpacity style={[button.name!=0?styles.button:styles.zeroButton, 
-            button.type == "op" || button.type ==  "eq"?button.name==selectedOperator&&highlightOperator?{backgroundColor:"white"}:{backgroundColor: "#e3b11c"}:["clear","sign","perc"].includes(button.type)?{backgroundColor:"#c6c3c1"}:{}]} onPress={()=> {
+        <TouchableOpacity style={[
+            button.name!=0 ? styles.button : styles.zeroButton, 
+            button.type == "op" || button.type ==  "eq" ?
+                    button.name==selectedOperator&&highlightOperator ? 
+                        {backgroundColor:"white"} :
+                        {backgroundColor: "#e3b11c"} :
+                    ["clear","sign","perc"].includes(button.type) ?
+                        {backgroundColor:"#c6c3c1"}:
+                        {}
+            ]} 
+            onPress={()=> {
                 if(outputNum == "Error"){
                    setFirstNum("0")
                    setOutputNum("0")
@@ -195,7 +217,13 @@ export default function Calculator() {
                         break;
                 }
                 }}>
-            <Text style={[styles.buttonText,button.name==selectedOperator&&highlightOperator?{color:"#e3b11c" }:["clear","sign","perc"].includes(button.type)?{color:"black"}:{}]}>
+            <Text style={[styles.buttonText,
+                button.name==selectedOperator && highlightOperator ? 
+                    {color:"#e3b11c" }:
+                    ["clear","sign","perc"].includes(button.type) ?
+                        {color:"black"}
+                        :{}
+                ]}>
                 {button.name}
             </Text>
         </TouchableOpacity>
