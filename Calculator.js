@@ -9,14 +9,16 @@ export default function Calculator() {
     const [selectedOperator, setSelectedOperator] = useState(null)
     const [highlightOperator, setHighlightOperator] = useState(false)
     const [lastPressedEqual, setLastPressedEqual] = useState(false)
+   
     const divisionSymbol = "\u00F7";
     const timesSymbol = "\u00D7";
+
     Big.NE = -7;
     Big.PE = 7;
     const handleNumberPressed = (num) => {
-       
         if (lastPressedEqual){
             setOutputNum(num)
+            setFirstNum(num)
         }
         else if (highlightOperator){
             setLastPressedEqual(false)
@@ -25,37 +27,50 @@ export default function Calculator() {
         else{
             setLastPressedEqual(false)
             if(outputNum.length < 9){
-                setOutputNum(prevOutputNum=>prevOutputNum=="0"?num:prevOutputNum+num)
+                const result = outputNum=="0"?num:outputNum+num
+                setOutputNum(result)
+                if(secondNum!=null){
+                    setFirstNum(result)
+                }
             }
         }
         setHighlightOperator(false)
+        setLastPressedEqual(false)
     }
     const handleSignPressed = () => {
-   
-        setOutputNum(prevOutputNum=>String(Big(prevOutputNum).times(Big(-1))))
-
+        const result = String(Big(outputNum).times(Big(-1)))
+        setOutputNum(result)
+        if (firstNum!=null&&lastPressedEqual){
+            setFirstNum(result)
+        }
     }
 
     const handlePercentPressed = () => {
-        console.log(outputNum)
- 
-        setOutputNum(prevOutputNum=>String(Big(prevOutputNum).div(Big(100)).prec(6)))
+        const result = String(Big(outputNum).div(Big(100)).prec(6))
+        setOutputNum(result)
+        if (firstNum!=null&&lastPressedEqual){
+            setFirstNum(result)
+        }
     }
     
+
     const handlePeriodPressed = () => {
-       
-        setLastPressedEqual(false)
-        if (selectedOperator != null){
+        if (lastPressedEqual){
             setOutputNum("0.")
+            setFirstNum("0.")
            
+        }
+        else if(highlightOperator){
+            setOutputNum("0.")
         }
         else{
           if( outputNum.length < 9 && outputNum.indexOf(".")==-1){
-            setOutputNum(prevOutputNum=>prevOutputNum + ".")
+            const result = outputNum + "."
+            setOutputNum(result)
           }
         }
+        setLastPressedEqual(false)
         setHighlightOperator(false)
-          
     }
      
     const handleClearPressed = () => {
@@ -73,31 +88,26 @@ export default function Calculator() {
         }
         else if(!highlightOperator && !lastPressedEqual){
             handleEqualPressed()
-            setSecondNum(null)
+           
         }
        setHighlightOperator(true)
        setSelectedOperator(operator)
-       
+       setSecondNum(null)
        setLastPressedEqual(false)
     }
     const handleEqualPressed = () => {
-        
         const postOperatorNum = outputNum
-        const result = calculateResult(firstNum, !lastPressedEqual?outputNum:secondNum);
-        
+        const result = calculateResult(firstNum, secondNum==null?outputNum:secondNum);
         if(!lastPressedEqual){
             setLastPressedEqual(true)
             setSecondNum(postOperatorNum)
-           
         }
         setOutputNum(result)
-        
         setFirstNum(result)
         setHighlightOperator(false)
     }
 
     const calculateResult = (first, second) => {
-        
         if (selectedOperator == "+"){
             return String(Big(first).plus(Big(second)).prec(6))
         }
@@ -117,7 +127,6 @@ export default function Calculator() {
             return String(Big(first).times(Big(second)).prec(6))
         }
     }
-
 
     const buttons = [{name: "C", type: "clear"},
                     {name: "+/-", type:"sign"},
@@ -139,8 +148,6 @@ export default function Calculator() {
                     {name: ".", type: "per"},
                     {name: "=", type:"eq"}
                 ]
-
-
   return (
     <View style={styles.container}>
     <View style={styles.outputContainer}>
@@ -157,7 +164,7 @@ export default function Calculator() {
         contentContainerStyle={{ justifyContent: 'flex-end'}}
         renderItem={({ item: button,index }) =>  
         <TouchableOpacity style={[button.name!=0?styles.button:styles.zeroButton, 
-            button.type == "op" || button.type ==  "eq"?button.name==selectedOperator&&highlightOperator?{backgroundColor:"white"}:{backgroundColor: "#e3b11c"}:{}]} onPress={()=> {
+            button.type == "op" || button.type ==  "eq"?button.name==selectedOperator&&highlightOperator?{backgroundColor:"white"}:{backgroundColor: "#e3b11c"}:["clear","sign","perc"].includes(button.type)?{backgroundColor:"#c6c3c1"}:{}]} onPress={()=> {
                 if(outputNum == "Error"){
                    setFirstNum("0")
                    setOutputNum("0")
@@ -186,7 +193,7 @@ export default function Calculator() {
                         break;
                 }
                 }}>
-            <Text style={[styles.buttonText,button.name==selectedOperator&&highlightOperator?{color:"#e3b11c" }:{}]}>
+            <Text style={[styles.buttonText,button.name==selectedOperator&&highlightOperator?{color:"#e3b11c" }:["clear","sign","perc"].includes(button.type)?{color:"black"}:{}]}>
                 {button.name}
             </Text>
         </TouchableOpacity>
