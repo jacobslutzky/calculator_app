@@ -1,106 +1,197 @@
 import {useState, React} from 'react';
 import { StyleSheet, Text, TouchableOpacity, View,FlatList } from 'react-native';
-import { FontAwesome6 } from '@expo/vector-icons';
-export default function Calculator() {
-    
-    const [outputNum, setOutputNum] = useState(0)
-    const [prevNum, setPrevNum] = useState(null)
+import Big from 'big.js';
 
+export default function Calculator() {
+    const [outputNum, setOutputNum] = useState("0")
+    const [firstNum, setFirstNum] = useState(null)
+    const [secondNum, setSecondNum] = useState(null)
     const [selectedOperator, setSelectedOperator] = useState(null)
     const [highlightOperator, setHighlightOperator] = useState(false)
+    const [lastPressedEqual, setLastPressedEqual] = useState(false)
+    const divisionSymbol = "\u00F7";
+    const timesSymbol = "\u00D7";
+    Big.NE = -7;
+    Big.PE = 7;
     const handleNumberPressed = (num) => {
-        if (selectedOperator != null && prevNum == null){
-            setPrevNum(outputNum)
+       
+        if (lastPressedEqual){
+            setOutputNum(num)
+        }
+        else if (highlightOperator){
+            setLastPressedEqual(false)
             setOutputNum(num)
         }
         else{
-            setOutputNum(prevOutputNum=>prevOutputNum*10+num)
+            setLastPressedEqual(false)
+            if(outputNum.length < 9){
+                setOutputNum(prevOutputNum=>prevOutputNum=="0"?num:prevOutputNum+num)
+            }
         }
         setHighlightOperator(false)
     }
+    const handleSignPressed = () => {
+   
+        setOutputNum(prevOutputNum=>String(Big(prevOutputNum).times(Big(-1))))
 
-    const clearOutputPressed = () => {
-        setOutputNum(0)
-        setPrevNum(null)
+    }
+
+    const handlePercentPressed = () => {
+        console.log(outputNum)
+ 
+        setOutputNum(prevOutputNum=>String(Big(prevOutputNum).div(Big(100)).prec(6)))
+    }
+    
+    const handlePeriodPressed = () => {
+       
+        setLastPressedEqual(false)
+        if (selectedOperator != null){
+            setOutputNum("0.")
+           
+        }
+        else{
+          if( outputNum.length < 9 && outputNum.indexOf(".")==-1){
+            setOutputNum(prevOutputNum=>prevOutputNum + ".")
+          }
+        }
+        setHighlightOperator(false)
+          
+    }
+     
+    const handleClearPressed = () => {
+        setOutputNum("0")
+        setFirstNum(null)
+        setSecondNum(null)
+        setLastPressedEqual(false)
         setSelectedOperator(null)
         setHighlightOperator(false)
     }
 
     const handleOperatorSelected = (operator) => {
-        if (prevNum!=null && selectedOperator != null){
-            calculateOutput()
-           
+        if (firstNum == null){
+            setFirstNum(outputNum)
+        }
+        else if(!highlightOperator && !lastPressedEqual){
+            handleEqualPressed()
+            setSecondNum(null)
         }
        setHighlightOperator(true)
        setSelectedOperator(operator)
-       setPrevNum(null)
+       
+       setLastPressedEqual(false)
     }
-    const calculateOutput = () => {
+    const handleEqualPressed = () => {
+        
+        const postOperatorNum = outputNum
+        const result = calculateResult(firstNum, !lastPressedEqual?outputNum:secondNum);
+        
+        if(!lastPressedEqual){
+            setLastPressedEqual(true)
+            setSecondNum(postOperatorNum)
+           
+        }
+        setOutputNum(result)
+        
+        setFirstNum(result)
+        setHighlightOperator(false)
+    }
+
+    const calculateResult = (first, second) => {
+        
         if (selectedOperator == "+"){
-            setOutputNum(prevOutputNum=> prevNum + prevOutputNum)
+            return String(Big(first).plus(Big(second)).prec(6))
         }
         else if (selectedOperator == "-"){
-            setOutputNum(prevOutputNum=> prevNum - prevOutputNum)
+            return String(Big(first).minus(Big(second)).prec(6))
         }
-        else if (selectedOperator == "/"){
-            setOutputNum(prevOutputNum=> Number((prevNum / prevOutputNum).toFixed(6)))
-        }
-        else if (selectedOperator == "x"){
-            setOutputNum(prevOutputNum=> prevNum * prevOutputNum)
-        }
-        setSelectedOperator(null)
-        setPrevNum(null)
-        setHighlightOperator(false)
+        else if (selectedOperator == divisionSymbol){
+            if(second == "0"){
+                return "Error"
+            }
+            else{
+                return String(Big(first).div(Big(second)).prec(6))
+            }
 
+        }
+        else if (selectedOperator == timesSymbol){
+            return String(Big(first).times(Big(second)).prec(6))
+        }
     }
 
-    const ops = ["+", "-", "/","x"]
-    
-    function round(num) {
-        num = Math.round(num + "e" + 6);
-        return Number(num.tofi);
-    }
+
+    const buttons = [{name: "C", type: "clear"},
+                    {name: "+/-", type:"sign"},
+                    {name:"%", type: "perc"},
+                    {name: divisionSymbol, type:"op"},
+                    {name: "7", type: "num"},
+                    {name: "8", type: "num"},
+                    {name:"9", type: "num"},
+                    {name: timesSymbol, type:"op"},
+                    {name: "4", type: "num"},
+                    {name: "5", type: "num"},
+                    {name:"6", type: "num"},
+                    {name:"-", type:"op"},
+                    {name: "1", type: "num"},
+                    {name: "2", type: "num"},
+                    {name:"3", type: "num"},
+                    {name: "+", type:"op"},
+                    {name: "0", type: "num"},
+                    {name: ".", type: "per"},
+                    {name: "=", type:"eq"}
+                ]
+
 
   return (
     <View style={styles.container}>
-    <Text style={styles.output}>
-        {outputNum}
-    </Text>
-    <View style={{flexDirection:"row", justifyContent:"center"}}>
-    <TouchableOpacity style={styles.button} onPress={()=>clearOutputPressed()}>
-            <Text style={styles.buttonText}>
-                C
+    <View style={styles.outputContainer}>
+        <Text style={styles.output}>
+            {outputNum}
+        </Text>
+    </View>
+    
+    <FlatList
+        data={buttons}
+        scrollEnabled={false}
+        numColumns={4}
+        style={styles.list}
+        contentContainerStyle={{ justifyContent: 'flex-end'}}
+        renderItem={({ item: button,index }) =>  
+        <TouchableOpacity style={[button.name!=0?styles.button:styles.zeroButton, 
+            button.type == "op" || button.type ==  "eq"?button.name==selectedOperator&&highlightOperator?{backgroundColor:"white"}:{backgroundColor: "#e3b11c"}:{}]} onPress={()=> {
+                if(outputNum == "Error"){
+                   setFirstNum("0")
+                   setOutputNum("0")
+                }
+                switch (button.type) {
+                    case "op":
+                        handleOperatorSelected(button.name);
+                        break;
+                    case "num":
+                        handleNumberPressed(button.name);
+                        break;
+                    case 'eq':
+                        handleEqualPressed();
+                        break;
+                    case 'clear':
+                        handleClearPressed();
+                        break;
+                    case 'sign':
+                        handleSignPressed();
+                        break;
+                    case 'perc':
+                        handlePercentPressed();
+                        break;
+                    case 'per':
+                        handlePeriodPressed();
+                        break;
+                }
+                }}>
+            <Text style={[styles.buttonText,button.name==selectedOperator&&highlightOperator?{color:"#e3b11c" }:{}]}>
+                {button.name}
             </Text>
         </TouchableOpacity>
-    <FlatList
-        data={Array(9)}
-        numColumns={3}
-        style={styles.list}
-        contentContainerStyle={{flexGrow: 1, justifyContent: 'center'}}
-        renderItem={({ item: num,index }) =>  
-        <TouchableOpacity style={styles.button} onPress={()=>handleNumberPressed(index+1)}>
-            <Text style={styles.buttonText}>
-                {index+1}
-            </Text>
-        </TouchableOpacity>}
-    />
-    <FlatList
-        data={ops}
-        style={styles.list}
-        contentContainerStyle={{flexGrow: 1, justifyContent: 'center'}}
-        renderItem={({ item: operator }) =>  
-        <TouchableOpacity style={[styles.button,selectedOperator==operator&&highlightOperator?{backgroundColor:"gold"}:{}]} onPress={()=>handleOperatorSelected(operator)}>
-            <Text style={styles.buttonText}>
-                {operator}
-            </Text>
-        </TouchableOpacity>}
-    />
-     <TouchableOpacity style={styles.button} onPress={()=>calculateOutput()}>
-            <Text style={styles.buttonText}>
-                =
-            </Text>
-        </TouchableOpacity>
-     </View>
+        }/>
+        
     </View>
   );
 }
@@ -108,29 +199,52 @@ export default function Calculator() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'center',
+    
+    
+  },
+  outputContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+
+    
   },
   list: {
-    flex: 1,
-    backgroundColor: '#fff',
+    flex:1,
+    backgroundColor: 'black',
+   paddingBottom:100
   },
+
   output: {
     fontSize:50,
-    fontWeight:"bold"
+    fontWeight:"bold",
+    marginRight:24,
+    color:"white"
   },
   button: {
     backgroundColor: "grey",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    borderRadius: "40%",
+    width: 75,
+    height: 75,
     justifyContent:'center',
     alignItems:"center",
-    margin: 3
+    margin: 8
+  },
+  zeroButton: {
+    backgroundColor: "grey",
+    borderRadius: "40%",
+    width: 162,
+    height: 75,
+    justifyContent:'center',
+    alignItems:"flex-start",
+    paddingLeft:30,
+    margin: 8,
+    textAlign:"left"
   },
   buttonText: {
     color: "white",
-    fontSize: 25
-  }
+    fontSize: 30
+  },
+
 });
