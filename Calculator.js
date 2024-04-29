@@ -40,7 +40,7 @@ export default function Calculator() {
     const handleSignPressed = () => {
         const result = String(Big(outputNum).times(Big(-1)))
         setOutputNum(result)
-        if (firstNum!=null&&lastPressedEqual){
+        if (lastPressedEqual){
             setFirstNum(result)
         }
     }
@@ -48,7 +48,7 @@ export default function Calculator() {
     const handlePercentPressed = () => {
         const result = String(Big(outputNum).div(Big(100)).prec(6))
         setOutputNum(result)
-        if (firstNum!=null&&lastPressedEqual){
+        if (lastPressedEqual){
             setFirstNum(result)
         }
     }
@@ -100,7 +100,9 @@ export default function Calculator() {
         const result = calculateResult(firstNum, secondNum==null?outputNum:secondNum);
         if(!lastPressedEqual){
             setLastPressedEqual(true)
-            setSecondNum(postOperatorNum)
+            if(secondNum == null){
+                setSecondNum(postOperatorNum)
+            }
         }
         setOutputNum(result)
         setFirstNum(result)
